@@ -1,0 +1,48 @@
+services:
+  node-b-1:
+    build: ./node-b
+    environment:
+      - PORT=8080
+      - SUBSCRIBER_COUNT=100000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  node-b-2:
+    build: ./node-b
+    environment:
+      - PORT=8080
+      - SUBSCRIBER_COUNT=100000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  node-b-3:
+    build: ./node-b
+    environment:
+      - PORT=8080
+      - SUBSCRIBER_COUNT=100000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  haproxy:
+    image: haproxy:2.9-alpine
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ulimits:
+      nofile:
+        soft: 200100
+        hard: 200100
+    depends_on:
+      - node-b-1
+      - node-b-2
+      - node-b-3
