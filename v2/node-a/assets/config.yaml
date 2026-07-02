@@ -1,0 +1,6 @@
+host: "localhost"
+port: 8080
+concurrency: 500
+duration: 10s
+pool_size: 500
+subscriber_count: 100000

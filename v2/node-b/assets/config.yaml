@@ -1,0 +1,6 @@
+port: 8080
+subscriber_count: 100000
+read_timeout: 10s
+write_timeout: 10s
+idle_timeout: 60s
+concurrency: 262144
