@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -11,8 +10,10 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
 
 	"node-b/internal/config"
+	"node-b/internal/logger"
 	"node-b/internal/server"
 	"node-b/internal/store"
 )
@@ -23,16 +24,23 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	log := logger.New()
+	defer log.Sync()
+
 	cfg, err := config.Load(*configPath)
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		log.Fatal("load config", zap.Error(err))
 	}
 
-	log.Printf("seeding %d subscribers...", cfg.SubscriberCount)
+	log.Info("seeding subscribers", zap.Int("count", cfg.SubscriberCount))
 	subscribers := store.New(cfg.SubscriberCount)
-	log.Printf("store ready, listening on :%d | GOMAXPROCS=%d", cfg.Port, runtime.GOMAXPROCS(0))
+	log.Info("store ready",
+		zap.Int("port", cfg.Port),
+		zap.Int("gomaxprocs", runtime.GOMAXPROCS(0)),
+		zap.Bool("log_requests", cfg.LogRequests),
+	)
 
-	handler := server.NewHandler(subscribers)
+	handler := server.NewHandler(subscribers, log, cfg.LogRequests)
 	srv := &fasthttp.Server{
 		Handler:            handler.HandleRequest,
 		ReadTimeout:        cfg.ReadTimeout,
@@ -46,7 +54,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(fmt.Sprintf(":%d", cfg.Port)); err != nil {
-			log.Fatalf("listen: %v", err)
+			log.Fatal("listen failed", zap.Error(err))
 		}
 	}()
 
@@ -54,6 +62,6 @@ func main() {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
 
-	log.Println("shutting down...")
+	log.Info("shutting down")
 	_ = srv.Shutdown()
 }

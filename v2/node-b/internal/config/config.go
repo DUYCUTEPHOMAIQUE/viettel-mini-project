@@ -14,6 +14,7 @@ type Config struct {
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
 	Concurrency     int
+	LogRequests     bool
 }
 
 func Load(path string) (Config, error) {
@@ -29,6 +30,7 @@ func Load(path string) (Config, error) {
 		WriteTimeout    string `yaml:"write_timeout"`
 		IdleTimeout     string `yaml:"idle_timeout"`
 		Concurrency     int    `yaml:"concurrency"`
+		LogRequests     bool   `yaml:"log_requests"`
 	}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return Config{}, err
@@ -54,5 +56,6 @@ func Load(path string) (Config, error) {
 		WriteTimeout:    writeTimeout,
 		IdleTimeout:     idleTimeout,
 		Concurrency:     raw.Concurrency,
+		LogRequests:     raw.LogRequests,
 	}, nil
 }

@@ -2,8 +2,10 @@ package server
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
 
 	"node-b/internal/store"
 )
@@ -18,14 +20,28 @@ var (
 )
 
 type Handler struct {
-	store *store.SubscriberStore
+	store       *store.SubscriberStore
+	logger      *zap.Logger
+	logRequests bool
 }
 
-func NewHandler(s *store.SubscriberStore) *Handler {
-	return &Handler{store: s}
+func NewHandler(s *store.SubscriberStore, logger *zap.Logger, logRequests bool) *Handler {
+	return &Handler{store: s, logger: logger, logRequests: logRequests}
 }
 
 func (h *Handler) HandleRequest(ctx *fasthttp.RequestCtx) {
+	if h.logRequests {
+		start := time.Now()
+		defer func() {
+			h.logger.Info("request",
+				zap.ByteString("method", ctx.Method()),
+				zap.ByteString("path", ctx.Path()),
+				zap.Int("status", ctx.Response.StatusCode()),
+				zap.Duration("latency", time.Since(start)),
+			)
+		}()
+	}
+
 	path := ctx.Path()
 	ctx.Response.Header.SetContentTypeBytes(contentTypeJSON)
 
